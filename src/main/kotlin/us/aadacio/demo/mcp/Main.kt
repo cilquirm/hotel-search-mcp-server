@@ -1,0 +1,103 @@
+package us.aadacio.demo.mcp
+
+import io.ktor.http.*
+import kotlinx.coroutines.runBlocking
+import io.ktor.server.application.*
+import io.ktor.server.cio.*
+import io.ktor.server.engine.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.server.sse.*
+import io.ktor.util.collections.*
+import io.modelcontextprotocol.kotlin.sdk.*
+import io.modelcontextprotocol.kotlin.sdk.server.SSEServerTransport
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+
+
+import kotlinx.coroutines.CompletableDeferred
+
+fun configureServer() : Server =
+  Server(
+    Implementation("Hotel Search MCP Server", "0.1.0"),
+    ServerOptions(
+      ServerCapabilities(
+        prompts = ServerCapabilities.Prompts(true),
+        resources = ServerCapabilities.Resources(true, true),
+        tools = ServerCapabilities.Tools(true)
+      )
+    )
+  ).apply {
+    addPrompt(
+      name = "Hotel Search",
+      description = "Search for a great hotel deal",
+      arguments = listOf(
+        PromptArgument (
+          name = "city",
+          description = "Name of the city",
+          required = true
+        ),
+        PromptArgument(
+          name = "startDate",
+          description = "The start date of the stay",
+          required = true
+        ),
+        PromptArgument(
+          name = "endDate",
+          description = "The end date of the stay",
+          required = true
+        )
+      )
+    ) { req ->
+    GetPromptResult(
+      "Description for ${req.name}",
+      messages = listOf(
+        PromptMessage(
+          Role.user,
+          TextContent("Search for a hotel in [[city]]${req.arguments?.get("city")} between ${req.arguments?.get("startDate")} and ${req.arguments?.get("endDate")}")
+      )
+    )
+    )
+  }
+
+}
+
+fun main() {
+
+  println("starting embedded server")
+
+  // val def = CompletableDeferred<Unit>()
+  runBlocking {
+    val servers = ConcurrentMap<String, Server>()
+    embeddedServer(CIO, host = "0.0.0.0", port = 9090) {
+      install(SSE)
+      routing {
+        sse("/sse") {
+          println("in the sse path")
+          val transport = SSEServerTransport("/message", this)
+          val server = configureServer()
+
+          servers[transport.sessionId] = server
+
+          server.onCloseCallback = {
+            servers.remove(transport.sessionId)
+          }
+
+          server.connect(transport)
+        }
+        post("/message") {
+          println("received message")
+          val sessionId = call.request.queryParameters["sessionId"]!!
+          val transport = servers[sessionId]?.transport as? SSEServerTransport
+          if (transport == null) {
+            call.respond(status = HttpStatusCode.NotFound, message = "Session not found")
+            return@post
+          }
+
+          transport.handlePostMessage(call)
+        }
+      }
+    }.start(wait = true)
+  }
+
+} 
