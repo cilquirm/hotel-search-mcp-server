@@ -32,26 +32,14 @@ fun configureServer() : Server =
       name = "Hotel Search",
       description = "Search for a great hotel deal",
       arguments = listOf(
-        PromptArgument (
-          name = "city",
-          description = "Name of the city",
-          required = true
-        ),
-        PromptArgument(
-          name = "startDate",
-          description = "The start date of the stay",
-          required = true
-        ),
-        PromptArgument(
-          name = "endDate",
-          description = "The end date of the stay",
-          required = true
-        )
+        PromptArgument ("city", "Name of the city", true),
+        PromptArgument("startDate", "The start date of the stay", true),
+        PromptArgument("endDate", "The end date of the stay", true)
       )
     ) { req ->
     GetPromptResult(
       "Description for ${req.name}",
-      messages = listOf(
+      listOf(
         PromptMessage(
           Role.user,
           TextContent("Search for a hotel in [[city]]${req.arguments?.get("city")} between ${req.arguments?.get("startDate")} and ${req.arguments?.get("endDate")}")

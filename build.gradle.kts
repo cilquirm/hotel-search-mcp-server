@@ -22,7 +22,7 @@ dependencies {
     implementation(libs.ktor.server.cio)
     implementation(libs.ktor.server.sse)
     implementation(libs.kotlin.logging)
-    implementation(libs.mcp.kotlin.sdk) 
+    implementation(libs.mcp.kotlin.sdk)
     testImplementation(kotlin("test"))
 }
 
