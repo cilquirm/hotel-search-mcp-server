@@ -16,6 +16,8 @@ import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 fun configureServer() : Server =
   Server(
@@ -47,6 +49,27 @@ fun configureServer() : Server =
     )
     )
   }
+  addTool("hotel_search",
+          "Search a hotel using Priceline",
+          Tool.Input(
+            properties = buildJsonObject {
+              put("start_date", buildJsonObject { put("type", "string") } )
+              put("end_date", buildJsonObject { put("type", "string") } )
+                                         },
+            required = listOf("start_date", "end_date")
+          )
+  ) { _ ->
+    CallToolResult(listOf(TextContent("Hello World")))
+  }
+  addTool( "flight_search",
+    "Search for a flight using Priceline",
+    Tool.Input(
+      properties = buildJsonObject {
+        put("location", buildJsonObject { put("type", "string") } )
+      },
+      required = listOf("location")
+    )
+  ) { req -> CallToolResult(listOf(TextContent("Let's go to ${req.arguments["location"]} "))) }
 
 }
 
