@@ -13,11 +13,13 @@ import io.modelcontextprotocol.kotlin.sdk.*
 import io.modelcontextprotocol.kotlin.sdk.server.SSEServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import kotlinx.serialization.json.*
+
+val logger = KotlinLogging.logger { } 
 
 fun configureServer() : Server =
   Server(
@@ -53,13 +55,36 @@ fun configureServer() : Server =
           "Search a hotel using Priceline",
           Tool.Input(
             properties = buildJsonObject {
-              put("start_date", buildJsonObject { put("type", "string") } )
-              put("end_date", buildJsonObject { put("type", "string") } )
+              put("startDate", buildJsonObject {
+                put("type", "string")
+                put("description", "The date you want to check in")
+              } )
+              
+              put("endDate", buildJsonObject {
+                put("type", "string")
+                put("description", "The date you want to check out")
+              } )
+
+              put("hotelType", buildJsonObject {
+                put("enum", buildJsonArray {
+                  add("luxury")
+                  add("mid-range")
+                  add("budget")
+                })
+                put("default", "mid-range")
+              })
+
                                          },
-            required = listOf("start_date", "end_date")
+            required = listOf("startDate", "endDate")
           )
-  ) { _ ->
-    CallToolResult(listOf(TextContent("Hello World")))
+  ) { ctr ->
+
+    logger.info { "Received query of ${ctr.arguments["startDate"]} to ${ctr.arguments["endDate"]} with a hotel type of ${ctr.arguments["hotelType"]}" }
+    CallToolResult(listOf(
+      TextContent("The Best Hotel Anywhere"),
+      TextContent("The SuperBest Hotel in San Diego"),
+      TextContent("A mediocre hotel in Texas")
+    ))
   }
   addTool( "flight_search",
     "Search for a flight using Priceline",
